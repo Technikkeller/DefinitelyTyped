@@ -7613,17 +7613,14 @@ declare namespace Office {
              * The content of the attachment is returned as a base64-encoded string.
              */
             Base64 = "base64",
-
             /**
              * The content of the attachment is returned as a string representing a URL.
              */
             Url = "url",
-
             /**
              * The content of the attachment is returned as a string representing an .eml formatted file.
              */
             Eml = "eml",
-
             /**
              * The content of the attachment is returned as a string representing an .icalendar formatted file.
              */
@@ -7643,7 +7640,6 @@ declare namespace Office {
              * An attachment was added to the item.
              */
             Added = "added",
-
             /**
              * An attachment was removed from the item.
              */
@@ -11222,12 +11218,15 @@ declare namespace Office {
         /**
          * Gets an item's categories.
          *
+         * **Important**: If there are no categories on the item, `null` or an empty array will be returned depending on the Outlook version
+         * so make sure to handle both cases.
+         *
+         * [Api set: Mailbox 1.8]
+         *
          * @param options - An object literal that contains one or more of the following properties.
          *        `asyncContext`: Developers can provide any object they wish to access in the callback method.
          * @param callback - When the method completes, the function passed in the `callback` parameter is called with a single parameter of
-         *                 type `Office.AsyncResult`. If adding categories fails, the `asyncResult.error` property will contain an error code.
-         *
-         * [Api set: Mailbox 1.8]
+         *                 type `Office.AsyncResult`. If getting categories fails, the `asyncResult.error` property will contain an error code.
          *
          * @remarks
          * 
@@ -11239,6 +11238,9 @@ declare namespace Office {
         /**
          * Gets an item's categories.
          *
+         * **Important**: If there are no categories on the item, `null` or an empty array will be returned depending on the Outlook version
+         * so make sure to handle both cases.
+         *
          * [Api set: Mailbox 1.8]
          *
          * @remarks
@@ -11248,7 +11250,7 @@ declare namespace Office {
          * **{@link https://docs.microsoft.com/office/dev/add-ins/outlook/outlook-add-ins-overview#extension-points | Applicable Outlook mode}**: Compose or Read
          *
          * @param callback - When the method completes, the function passed in the `callback` parameter is called with a single parameter of
-         *                 type `Office.AsyncResult`.
+         *                 type `Office.AsyncResult`. If getting categories fails, the `asyncResult.error` property will contain an error code.
          */
         getAsync(callback: (asyncResult: Office.AsyncResult<CategoryDetails[]>) => void): void;
         /**
@@ -14812,9 +14814,12 @@ declare namespace Office {
          */
         key?: string;
         /**
-         * Specifies the `ItemNotificationMessageType` of message. If type is `ProgressIndicator` or `ErrorMessage`, an icon is automatically supplied
+         * Specifies the `ItemNotificationMessageType` of message.
+         *
+         * If type is `ProgressIndicator` or `ErrorMessage`, an icon is automatically supplied
          * and the message is not persistent. Therefore the icon and persistent properties are not valid for these types of messages.
          * Including them will result in an `ArgumentException`.
+         *
          * If type is `ProgressIndicator`, the developer should remove or replace the progress indicator when the action is complete.
          */
         type: MailboxEnums.ItemNotificationMessageType | string;
@@ -14831,7 +14836,8 @@ declare namespace Office {
          */
         message: string;
         /**
-         * Only applicable when type is `InformationalMessage`. If true, the message remains until removed by this add-in or dismissed by the user.
+         * Specifies if the message should be persistent. Only applicable when type is `InformationalMessage`.
+         * If true, the message remains until removed by this add-in or dismissed by the user.
          * If false, it is removed when the user navigates to a different item.
          * For error notifications, the message persists until the user sees it once.
          * Specifying this parameter for an unsupported type throws an exception.
@@ -69719,11 +69725,22 @@ declare namespace Word {
         tableCell = "TableCell",
     }
     /**
-     * [Api set: WordApi]
+     * This enum sets where the cursor (insertion point) in the document is after a selection.
+     * 
+     * [Api set: WordApi 1.1]
      */
     enum SelectionMode {
+        /**
+         * The entire range is selected.
+         */
         select = "Select",
+        /**
+         * The cursor is at the beginning of the selection (just before the start of the selected range).
+         */
         start = "Start",
+        /**
+         * The cursor is at the end of the selection (just after the end of the selected range).
+         */
         end = "End",
     }
     /**

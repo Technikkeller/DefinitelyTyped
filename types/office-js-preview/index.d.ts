@@ -7885,6 +7885,19 @@ declare namespace Office {
 declare namespace Office {
     namespace MailboxEnums {
         /**
+         * Specifies the type of action in a notification message.
+         *
+         * [Api set: Mailbox Preview]
+         *
+         * @beta
+         */
+        enum ActionType {
+            /**
+             * The `showTaskPane` action.
+             */
+            ShowTaskPane = "showTaskPane"
+        }
+        /**
          * Specifies the sensitivity type of an appointment.
          *
          * [Api set: Mailbox Preview]
@@ -7902,21 +7915,18 @@ declare namespace Office {
              * [Api set: Mailbox Preview]
              */
             Normal = "normal",
-
             /**
              * Treat the item as personal.
              *
              * [Api set: Mailbox Preview]
              */
             Personal = "personal",
-
             /**
              * Treat the item as private.
              *
              * [Api set: Mailbox Preview]
              */
             Private = "private",
-
             /**
              * Treat the item as confidential.
              *
@@ -7938,17 +7948,14 @@ declare namespace Office {
              * The content of the attachment is returned as a base64-encoded string.
              */
             Base64 = "base64",
-
             /**
              * The content of the attachment is returned as a string representing a URL.
              */
             Url = "url",
-
             /**
              * The content of the attachment is returned as a string representing an .eml formatted file.
              */
             Eml = "eml",
-
             /**
              * The content of the attachment is returned as a string representing an .icalendar formatted file.
              */
@@ -7968,7 +7975,6 @@ declare namespace Office {
              * An attachment was added to the item.
              */
             Added = "added",
-
             /**
              * An attachment was removed from the item.
              */
@@ -8293,7 +8299,15 @@ declare namespace Office {
             /**
              * The notification message is an error message.
              */
-            ErrorMessage = "errorMessage"
+            ErrorMessage = "errorMessage",
+            /**
+             * The notification message is an informational message with actions.
+             *
+             * [Api set: Mailbox Preview]
+             *
+             * @beta
+             */
+            InsightMessage = "insightMessage"
         }
         /**
          * Specifies an item's type.
@@ -12009,6 +12023,9 @@ declare namespace Office {
         /**
          * Gets an item's categories.
          *
+         * **Important**: If there are no categories on the item, `null` or an empty array will be returned depending on the Outlook version
+         * so make sure to handle both cases.
+         *
          * [Api set: Mailbox 1.8]
          *
          * @remarks
@@ -12020,11 +12037,14 @@ declare namespace Office {
          * @param options - An object literal that contains one or more of the following properties.
          *        `asyncContext`: Developers can provide any object they wish to access in the callback method.
          * @param callback - When the method completes, the function passed in the `callback` parameter is called with a single parameter of
-         *                 type `Office.AsyncResult`. If adding categories fails, the `asyncResult.error` property will contain an error code.
+         *                 type `Office.AsyncResult`. If getting categories fails, the `asyncResult.error` property will contain an error code.
          */
         getAsync(options: Office.AsyncContextOptions, callback: (asyncResult: Office.AsyncResult<CategoryDetails[]>) => void): void;
         /**
          * Gets an item's categories.
+         *
+         * **Important**: If there are no categories on the item, `null` or an empty array will be returned depending on the Outlook version
+         * so make sure to handle both cases.
          *
          * [Api set: Mailbox 1.8]
          *
@@ -12035,7 +12055,7 @@ declare namespace Office {
          * **{@link https://docs.microsoft.com/office/dev/add-ins/outlook/outlook-add-ins-overview#extension-points | Applicable Outlook mode}**: Compose or Read
          *
          * @param callback - When the method completes, the function passed in the `callback` parameter is called with a single parameter of
-         *                 type `Office.AsyncResult`.
+         *                 type `Office.AsyncResult`. If getting categories fails, the `asyncResult.error` property will contain an error code.
          */
         getAsync(callback: (asyncResult: Office.AsyncResult<CategoryDetails[]>) => void): void;
         /**
@@ -16150,6 +16170,38 @@ declare namespace Office {
         setAsync(isAllDayEvent: boolean, callback?: (asyncResult: Office.AsyncResult<void>) => void): void;
     }
     /**
+     * The definition of the action for a notification message.
+     *
+     * [Api set: Mailbox Preview]
+     *
+     * @remarks
+     *
+     * **{@link https://docs.microsoft.com/office/dev/add-ins/outlook/understanding-outlook-add-in-permissions | Minimum permission level}**: `ReadItem`
+     *
+     * **{@link https://docs.microsoft.com/office/dev/add-ins/outlook/outlook-add-ins-overview#extension-points | Applicable Outlook mode}**: Compose
+     *
+     * @beta
+     */
+    interface NotificationMessageAction {
+        /**
+         * The type of action to be performed.
+         * `ActionType.ShowTaskPane` is the only supported action.
+         */
+        actionType: string | MailboxEnums.ActionType;
+        /**
+         * The text of the action link.
+         */
+        actionText: string;
+        /**
+         * The button defined in the manifest based on the item type.
+         */
+        commandId: string;
+        /**
+         * Any JSON data the button needs to pass on.
+         */
+        contextData: any;
+    }
+    /**
      * An array of `NotificationMessageDetails` objects are returned by the `NotificationMessages.getAllAsync` method.
      *
      * [Api set: Mailbox 1.3]
@@ -16166,9 +16218,12 @@ declare namespace Office {
          */
         key?: string;
         /**
-         * Specifies the `ItemNotificationMessageType` of message. If type is `ProgressIndicator` or `ErrorMessage`, an icon is automatically supplied
+         * Specifies the `ItemNotificationMessageType` of message.
+         *
+         * If type is `ProgressIndicator` or `ErrorMessage`, an icon is automatically supplied
          * and the message is not persistent. Therefore the icon and persistent properties are not valid for these types of messages.
          * Including them will result in an `ArgumentException`.
+         *
          * If type is `ProgressIndicator`, the developer should remove or replace the progress indicator when the action is complete.
          */
         type: MailboxEnums.ItemNotificationMessageType | string;
@@ -16185,12 +16240,27 @@ declare namespace Office {
          */
         message: string;
         /**
-         * Only applicable when type is `InformationalMessage`. If true, the message remains until removed by this add-in or dismissed by the user.
+         * Specifies if the message should be persistent. Only applicable when type is `InformationalMessage`.
+         * If true, the message remains until removed by this add-in or dismissed by the user.
          * If false, it is removed when the user navigates to a different item.
          * For error notifications, the message persists until the user sees it once.
          * Specifying this parameter for an unsupported type throws an exception.
          */
         persistent?: Boolean;
+        /**
+         * Specifies actions for the message. Limit: 1 action. This limit doesn't count the "Dismiss" action which is included by default.
+         * Only applicable when the type is `InsightMessage`.
+         * Specifying this property for an unsupported type or including too many actions throws an error.
+         *
+         * [Api set: Mailbox Preview]
+         *
+         * @remarks
+         *
+         * **{@link https://docs.microsoft.com/office/dev/add-ins/outlook/outlook-add-ins-overview#extension-points | Applicable Outlook mode}**: Compose
+         *
+         * @beta
+         */
+        actions?: NotificationMessageAction[];
     }
     /**
      * The `NotificationMessages` object is returned as the `notificationMessages` property of an item.
@@ -16208,6 +16278,9 @@ declare namespace Office {
          * Adds a notification to an item.
          *
          * There are a maximum of 5 notifications per message. Setting more will return a `NumberOfNotificationMessagesExceeded` error.
+         *
+         * **Important**: Only one notification of type `InsightMessage` is allowed per add-in.
+         * (The `InsightMessage` type is currently in preview.) Attempting to add more will throw an error.
          *
          * [Api set: Mailbox 1.3]
          *
@@ -16231,6 +16304,9 @@ declare namespace Office {
          * Adds a notification to an item.
          *
          * There are a maximum of 5 notifications per message. Setting more will return a `NumberOfNotificationMessagesExceeded` error.
+         *
+         * **Important**: Only one notification of type `InsightMessage` is allowed per add-in.
+         * (The `InsightMessage` type is currently in preview.) Attempting to add more will throw an error.
          *
          * [Api set: Mailbox 1.3]
          *
@@ -26300,14 +26376,14 @@ declare namespace Excel {
          */
         reapplyFilters(): void;
         /**
-         * Sets the style applied to the slicer.
+         * Sets the style applied to the table.
          *
          * [Api set: ExcelApi BETA (PREVIEW ONLY)]
          * @beta
          *
-         * @param style The style to apply to the PivotTable. An `InvalidArgumentException` is thrown if a string is provided that does not match the name of any style.
+         * @param style The style to apply to the table. An `InvalidArgumentException` is thrown if a string is provided that does not match the name of any style.
          */
-        setStyle(style: string | PivotTableStyle | BuiltInTableStyle): void;
+        setStyle(style: string | TableStyle | BuiltInTableStyle): void;
         /**
          * Queues up a command to load the specified properties of the object. You must call `context.sync()` before reading the properties.
          *
@@ -40915,9 +40991,9 @@ declare namespace Excel {
          * [Api set: ExcelApi BETA (PREVIEW ONLY)]
          * @beta
          *
-         * @param style The style to apply to the PivotTable. An `InvalidArgumentException` is thrown if a string is provided that does not match the name of any style.
+         * @param style The style to apply to the slicer. An `InvalidArgumentException` is thrown if a string is provided that does not match the name of any style.
          */
-        setStyle(style: string | PivotTableStyle | BuiltInSlicerStyle): void;
+        setStyle(style: string | SlicerStyle | BuiltInSlicerStyle): void;
         /**
          * Queues up a command to load the specified properties of the object. You must call `context.sync()` before reading the properties.
          *
@@ -75526,11 +75602,22 @@ declare namespace Word {
         tableCell = "TableCell",
     }
     /**
-     * [Api set: WordApi]
+     * This enum sets where the cursor (insertion point) in the document is after a selection.
+     * 
+     * [Api set: WordApi 1.1]
      */
     enum SelectionMode {
+        /**
+         * The entire range is selected.
+         */
         select = "Select",
+        /**
+         * The cursor is at the beginning of the selection (just before the start of the selected range).
+         */
         start = "Start",
+        /**
+         * The cursor is at the end of the selection (just after the end of the selected range).
+         */
         end = "End",
     }
     /**
